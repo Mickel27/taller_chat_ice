@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+    id 'com.zeroc.gradle.ice-builder.slice'
+}
+
+dependencies {
+    api 'com.zeroc:ice:3.7.10'
+}
+
+slice {
+    java {
+        files = files('src/main/slice/ChatSystem.ice')
+    }
+}
