@@ -22,3 +22,10 @@ gradle-app.setting
 
 gradle.properties
 .vscode/
+
+# Salidas de compilación de IDEs (VS Code / Eclipse)
+**/bin/
+*.df.xml
+
+# Temporales de compilación de Slice
+.slice/
