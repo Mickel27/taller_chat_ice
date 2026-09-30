@@ -1,0 +1,2 @@
+ChatService.Proxy=ChatService:tcp -h 127.0.0.1 -p 10000
+CallbackAdapter.Endpoints=tcp -h 127.0.0.1
