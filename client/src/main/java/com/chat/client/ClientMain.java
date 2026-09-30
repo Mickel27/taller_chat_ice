@@ -1,5 +1,7 @@
 package com.chat.client;
 
+import java.util.Scanner;
+
 import com.chat.client.callbacks.ChatCallbackI;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatServicePrx;
@@ -10,15 +12,11 @@ import com.zeroc.Ice.ObjectAdapter;
 import com.zeroc.Ice.ObjectPrx;
 import com.zeroc.Ice.Util;
 
-import java.util.Scanner;
-
 public class ClientMain {
 
     public static void main(String[] args) {
-        // Inicialización del Communicator con la configuración del cliente
         try (Communicator communicator = Util.initialize(args, "config.client")) {
             
-            // 1. Conexión con el servidor mediante el proxy
             ObjectPrx base = communicator.propertyToProxy("ChatService.Proxy");
             ChatServicePrx server = ChatServicePrx.checkedCast(base);
 
@@ -27,16 +25,13 @@ public class ClientMain {
                 return;
             }
 
-            // 2. Creación del ObjectAdapter local para callbacks
             ObjectAdapter adapter = communicator.createObjectAdapter("CallbackAdapter");
             ChatCallbackI callbackServant = new ChatCallbackI();
             
-            // Registro del servant local y obtención de su proxy único
             ObjectPrx cbPrxBase = adapter.addWithUUID(callbackServant);
             adapter.activate();
             ChatCallbackPrx callbackProxy = ChatCallbackPrx.uncheckedCast(cbPrxBase);
 
-            // 3. Captura del nickname e inicio de sesión (RF-01)
             Scanner scanner = new Scanner(System.in);
             System.out.print("Ingrese su nickname: ");
             String nickname = scanner.nextLine().trim();
@@ -47,28 +42,47 @@ public class ClientMain {
             }
 
             try {
-                // Registro de sesión y envío del callback al servidor
                 server.login(nickname, callbackProxy);
                 System.out.println(">>> Sesión iniciada correctamente como: " + nickname);
+                System.out.println(">>> Uso para mensajes privados: /msg <usuario> <mensaje>");
+                System.out.println(">>> Escriba '/logout' o presione ENTER sin texto para salir.");
 
-                // ShutdownHook para garantizar desconexión limpia al cerrar la consola (RF-01)
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     try {
                         server.logout(nickname);
                     } catch (Exception ignored) {}
                 }));
 
-                System.out.println("Escriba '/logout' o presione ENTER para salir.");
-                System.out.print("> ");
-
                 while (true) {
+                    System.out.print("> ");
                     String input = scanner.nextLine().trim();
+
                     if (input.equalsIgnoreCase("/logout") || input.isEmpty()) {
                         break;
                     }
+
+                    // Comando RF-02: /msg <destinatario> <mensaje>
+                    if (input.startsWith("/msg ")) {
+                        String[] parts = input.substring(5).trim().split(" ", 2);
+                        if (parts.length < 2) {
+                            System.out.println("[SISTEMA]: Formato incorrecto. Uso: /msg <usuario> <mensaje>");
+                            continue;
+                        }
+
+                        String targetNickname = parts[0];
+                        String messageText = parts[1];
+
+                        try {
+                            server.sendPrivateMessage(nickname, targetNickname, messageText);
+                            System.out.println("[SISTEMA]: Mensaje enviado a '" + targetNickname + "'.");
+                        } catch (UserNotFoundException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        }
+                    } else {
+                        System.out.println("[SISTEMA]: Comando no reconocido. Usa '/msg <usuario> <mensaje>' para enviar privados.");
+                    }
                 }
 
-                // Cierre de sesión explícito
                 server.logout(nickname);
                 System.out.println(">>> Sesión cerrada exitosamente.");
 

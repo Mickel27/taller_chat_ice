@@ -1,5 +1,6 @@
 package com.chat.server.servants;
 
+import com.chat.server.SessionManager;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatService;
 import com.chat.slice.UserAlreadyExistsException;
@@ -10,7 +11,7 @@ public class ChatServiceI implements ChatService {
 
     private final SessionManager sessionManager;
 
-    public ChatServiceImpl(SessionManager sessionManager) {
+    public ChatServiceI(SessionManager sessionManager) {
         this.sessionManager = sessionManager;
     }
 
@@ -23,4 +24,11 @@ public class ChatServiceI implements ChatService {
     public void logout(String nickname, Current current) throws UserNotFoundException {
         sessionManager.logout(nickname);
     }
+
+    @Override
+    public void sendPrivateMessage(String senderNickname, String targetNickname, String message, Current current)
+            throws UserNotFoundException {
+        sessionManager.sendPrivateMessage(senderNickname, targetNickname, message);
+    }
+
 }
