@@ -16,4 +16,10 @@ public class ChatCallbackI implements ChatCallback {
         System.out.println("\n[PRESENCIA]: El usuario '" + nickname + "' se ha desconectado.");
         System.out.print("> ");
     }
+
+    @Override
+    public void receivePrivateMessage(String senderNickname, String message, Current current) {
+        System.out.println("\n[PRIVADO de " + senderNickname + "]: " + message);
+        System.out.print("> ");
+    }
 }

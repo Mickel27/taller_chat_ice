@@ -1,16 +1,17 @@
-package com.chat.server.servants;
+package com.chat.server;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.UserAlreadyExistsException;
 import com.chat.slice.UserNotFoundException;
 import com.zeroc.Ice.LocalException;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 public class SessionManager {
 
-    // Mapa concurrente para thread-safety de clientes activos (nickname -> Proxy del Callback)
+    // Mapa concurrente para thread-safety de clientes activos (nickname -> Proxy
+    // del Callback)
     private final Map<String, ChatCallbackPrx> activeSessions = new ConcurrentHashMap<>();
 
     public void login(String nickname, ChatCallbackPrx callback) throws UserAlreadyExistsException {
@@ -27,7 +28,8 @@ public class SessionManager {
         activeSessions.put(nickname, callback);
         System.out.println("[SessionManager]: Usuario registrado -> " + nickname);
 
-        // Monitor de Presencia: Notificar la conexion a todos los demas usuarios conectados (RF-01)
+        // Monitor de Presencia: Notificar la conexion a todos los demas usuarios
+        // conectados (RF-01)
         broadcastPresence(nickname, true);
     }
 
@@ -52,8 +54,10 @@ public class SessionManager {
                     callbackPrx.notifyUserDisconnected(subjectNickname);
                 }
             } catch (LocalException e) {
-                // Tolerancia a fallos: Detección y remoción automática de clientes caídos abruptamente (RF-01)
-                System.err.println("[SessionManager]: Cliente no responsivo (" + user + "). Eliminando sesion fantasma...");
+                // Tolerancia a fallos: Detección y remoción automática de clientes caídos
+                // abruptamente (RF-01)
+                System.err.println(
+                        "[SessionManager]: Cliente no responsivo (" + user + "). Eliminando sesion fantasma...");
                 activeSessions.remove(user);
             }
         });
@@ -61,5 +65,26 @@ public class SessionManager {
 
     public Map<String, ChatCallbackPrx> getActiveSessions() {
         return activeSessions;
+    }
+
+    public void sendPrivateMessage(String senderNickname, String targetNickname, String message)
+            throws UserNotFoundException {
+        ChatCallbackPrx targetCb = activeSessions.get(targetNickname);
+
+        if (targetCb == null) {
+            throw new UserNotFoundException("El usuario '" + targetNickname + "' no existe o no esta conectado.");
+        }
+
+        try {
+            targetCb.receivePrivateMessage(senderNickname, message);
+            System.out.println(
+                    "[SessionManager]: Mensaje de '" + senderNickname + "' enviado a '" + targetNickname + "'.");
+        } catch (LocalException e) {
+            System.err.println("[SessionManager]: Fallo al entregar mensaje a '" + targetNickname
+                    + "'. Removiendo cliente fantasma...");
+            activeSessions.remove(targetNickname);
+            throw new UserNotFoundException("El usuario '" + targetNickname + "' se desconecto inesperadamente.");
+        }
+
     }
 }

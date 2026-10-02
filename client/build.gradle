@@ -10,3 +10,7 @@ dependencies {
 application {
     mainClass = 'com.chat.client.ClientMain'
 }
+
+run{
+    standardInput = System.in
+}

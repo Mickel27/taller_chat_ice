@@ -1,5 +1,6 @@
-package com.chat.server.servants;
+package com.chat.server;
 
+import com.chat.server.servants.ChatServiceI;
 import com.zeroc.Ice.Communicator;
 import com.zeroc.Ice.ObjectAdapter;
 import com.zeroc.Ice.Util;
@@ -15,8 +16,8 @@ public class ServerMain {
             // Crear adaptador de objetos usando la propiedad definida en config.server
             ObjectAdapter adapter = communicator.createObjectAdapter("ChatServiceAdapter");
 
-            // Registrar el servant en el adaptador con el nombre 'ChatService'
-            ChatServiceImpl chatService = new ChatServiceImpl(sessionManager);
+            // Registrar el servant en el adaptador
+            ChatServiceI chatService = new ChatServiceI(sessionManager);
             adapter.add(chatService, Util.stringToIdentity("ChatService"));
 
             adapter.activate();
