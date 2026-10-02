@@ -1,0 +1,5 @@
+rootProject.name = 'chat-distribuido-ice'
+
+include 'slice'
+include 'server'
+include 'client'
