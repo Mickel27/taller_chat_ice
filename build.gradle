@@ -25,14 +25,14 @@ subprojects {
     }
 }
 
-task runServer(type: GradleBuild) {
+tasks.register('runServer') {
+    group = 'application'
     description = 'Ejecuta el servidor ZeroC Ice'
-    buildFile = file('server/build.gradle')
-    tasks = ['run']
+    dependsOn ':server:run'
 }
 
-task runClient(type: GradleBuild) {
+tasks.register('runClient') {
+    group = 'application'
     description = 'Ejecuta el cliente del sistema'
-    buildFile = file('client/build.gradle')
-    tasks = ['run']
+    dependsOn ':client:run'
 }
