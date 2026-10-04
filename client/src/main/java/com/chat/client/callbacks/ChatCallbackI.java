@@ -22,4 +22,10 @@ public class ChatCallbackI implements ChatCallback {
         System.out.println("\n[PRIVADO de " + senderNickname + "]: " + message);
         System.out.print("> ");
     }
+
+    @Override
+    public void receiveGroupMessage(String roomName, String senderNickname, String message, Current current) {
+        System.out.println("\n[GRUPO " + roomName + " - " + senderNickname + "]: " + message);
+        System.out.print("> ");
+    }
 }

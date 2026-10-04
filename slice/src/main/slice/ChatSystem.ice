@@ -12,6 +12,18 @@ module slice {
         string reason;
     };
 
+    exception RoomAlreadyExistsException {
+        string reason;
+    };
+
+    exception RoomNotFoundException {
+        string reason;
+    };
+
+    exception RoomMembershipException {
+        string reason;
+    };
+
     // Interfaz de retorno (Callback) que implementa el CLIENTE
     interface ChatCallback {
         void notifyUserConnected(string nickname);
@@ -19,6 +31,8 @@ module slice {
         
         // RF-02: Recibir un mensaje privado enviado por otro usuario
         void receivePrivateMessage(string senderNickname, string message);
+
+        void receiveGroupMessage(string roomName, string senderNickname, string message);
     };
 
     // Interfaz del servicio principal que implementa el SERVIDOR
@@ -32,6 +46,18 @@ module slice {
         // RF-02: Enviar un mensaje privado de un remitente a un destinatario
         void sendPrivateMessage(string senderNickname, string targetNickname, string message)
             throws UserNotFoundException;
+
+        void createRoom(string roomName, string ownerNickname, ChatCallback* ownerCallback)
+            throws RoomAlreadyExistsException, RoomMembershipException;
+
+        void joinRoom(string roomName, string nickname, ChatCallback* callback)
+            throws RoomNotFoundException, RoomMembershipException;
+
+        void leaveRoom(string roomName, string nickname)
+            throws RoomNotFoundException, RoomMembershipException;
+
+        void sendGroupMessage(string roomName, string senderNickname, string message)
+            throws RoomNotFoundException, RoomMembershipException;
     };
 
 };

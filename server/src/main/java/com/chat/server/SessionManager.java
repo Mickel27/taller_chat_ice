@@ -13,6 +13,11 @@ public class SessionManager {
     // Mapa concurrente para thread-safety de clientes activos (nickname -> Proxy
     // del Callback)
     private final Map<String, ChatCallbackPrx> activeSessions = new ConcurrentHashMap<>();
+    private RoomManager roomManager;
+    
+    public void setRoomManager(RoomManager roomManager) {
+        this.roomManager = roomManager;
+    }
 
     public void login(String nickname, ChatCallbackPrx callback) throws UserAlreadyExistsException {
         if (nickname == null || nickname.trim().isEmpty()) {
@@ -43,6 +48,10 @@ public class SessionManager {
 
         // Monitor de Presencia: Notificar la desconexion (RF-01)
         broadcastPresence(nickname, false);
+        //en caso de tener un roomManager, salir de cualquier grupo de chat para evitar errores
+        if (roomManager != null) {
+            roomManager.leaveAllRooms(nickname);
+        }
     }
 
     private void broadcastPresence(String subjectNickname, boolean isConnecting) {

@@ -12,12 +12,15 @@ public class ServerMain {
 
         try (Communicator communicator = Util.initialize(args, "config.server")) {
             SessionManager sessionManager = new SessionManager();
+            RoomManager roomManager = new RoomManager();
+
+            sessionManager.setRoomManager(roomManager);
 
             // Crear adaptador de objetos usando la propiedad definida en config.server
             ObjectAdapter adapter = communicator.createObjectAdapter("ChatServiceAdapter");
 
             // Registrar el servant en el adaptador
-            ChatServiceI chatService = new ChatServiceI(sessionManager);
+            ChatServiceI chatService = new ChatServiceI(sessionManager, roomManager);
             adapter.add(chatService, Util.stringToIdentity("ChatService"));
 
             adapter.activate();

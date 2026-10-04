@@ -5,6 +5,9 @@ import java.util.Scanner;
 import com.chat.client.callbacks.ChatCallbackI;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatServicePrx;
+import com.chat.slice.RoomAlreadyExistsException;
+import com.chat.slice.RoomMembershipException;
+import com.chat.slice.RoomNotFoundException;
 import com.chat.slice.UserAlreadyExistsException;
 import com.chat.slice.UserNotFoundException;
 import com.zeroc.Ice.Communicator;
@@ -45,6 +48,7 @@ public class ClientMain {
                 server.login(nickname, callbackProxy);
                 System.out.println(">>> Sesión iniciada correctamente como: " + nickname);
                 System.out.println(">>> Uso para mensajes privados: /msg <usuario> <mensaje>");
+                System.out.println(">>> Grupos: /create <grupo>, /join <grupo>, /leave <grupo>, /group <grupo> <mensaje>");
                 System.out.println(">>> Escriba '/logout' o presione ENTER sin texto para salir.");
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -78,8 +82,59 @@ public class ClientMain {
                         } catch (UserNotFoundException e) {
                             System.err.println("[ERROR]: " + e.reason);
                         }
-                    } else {
-                        System.out.println("[SISTEMA]: Comando no reconocido. Usa '/msg <usuario> <mensaje>' para enviar privados.");
+                    }
+                    //Comandos RF-03: /create, /group, /join, /leave
+                    else if (input.startsWith("/create ")) {
+                        String roomName = input.substring(8).trim();
+                        if (roomName.split(" ").length==1) {
+                            try {
+                            server.createRoom(roomName, nickname, callbackProxy);
+                            System.out.println("[SISTEMA]: Grupo '" + roomName + "' creado.");
+                        } catch (RoomAlreadyExistsException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        } catch (RoomMembershipException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        }                            
+                        } else {
+                            System.err.println("[ERROR]: El nombre del grupo no puede tener espacios");
+                        }
+                    }
+                    else if (input.startsWith("/join ")) {
+                        String roomName = input.substring(6).trim();
+                        try {
+                            server.joinRoom(roomName, nickname, callbackProxy);
+                            System.out.println("[SISTEMA]: Te uniste al grupo '" + roomName + "'.");
+                        } catch (RoomNotFoundException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        } catch (RoomMembershipException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        }
+                    } else if (input.startsWith("/leave ")) {
+                        String roomName = input.substring(7).trim();
+                        try {
+                            server.leaveRoom(roomName, nickname);
+                            System.out.println("[SISTEMA]: Saliste del grupo '" + roomName + "'.");
+                        } catch (RoomNotFoundException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        } catch (RoomMembershipException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        }
+                    } else if (input.startsWith("/group ")) {
+                        String[] parts = input.substring(7).trim().split(" ", 2);
+                        if (parts.length < 2) {
+                            System.out.println("[SISTEMA]: Formato incorrecto. Uso: /group <grupo> <mensaje>");
+                            continue;
+                        }
+                        try {
+                            server.sendGroupMessage(parts[0], nickname, parts[1]);
+                        } catch (RoomNotFoundException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        } catch (RoomMembershipException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        }
+                    }
+                    else {
+                        System.out.println("[SISTEMA]: Comando no reconocido.");
                     }
                 }
 
