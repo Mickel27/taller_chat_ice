@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.chat.slice.ChatCallbackPrx;
+import com.chat.slice.FileChunk;
 import com.chat.slice.UserAlreadyExistsException;
 import com.chat.slice.UserNotFoundException;
 import com.zeroc.Ice.LocalException;
@@ -95,5 +96,21 @@ public class SessionManager {
             throw new UserNotFoundException("El usuario '" + targetNickname + "' se desconecto inesperadamente.");
         }
 
+    }
+
+    public void sendPrivateFileChunk(String senderNickname, FileChunk chunk) throws UserNotFoundException {
+        ChatCallbackPrx targetCb = activeSessions.get(chunk.target);
+
+        if (targetCb == null) {
+            throw new UserNotFoundException("El usuario '" + chunk.target + "' no existe o no esta conectado.");
+        }
+
+        try {
+            targetCb.receiveFileChunk(senderNickname, chunk);
+        } catch (LocalException e) {
+            System.err.println("[SessionManager]: Fallo al entregar archivo a '" + chunk.target + "'. Removiendo cliente fantasma...");
+            activeSessions.remove(chunk.target);
+            throw new UserNotFoundException("El usuario '" + chunk.target + "' se desconecto inesperadamente.");
+        }
     }
 }

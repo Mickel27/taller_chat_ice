@@ -4,6 +4,7 @@ import com.chat.server.RoomManager;
 import com.chat.server.SessionManager;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatService;
+import com.chat.slice.FileChunk;
 import com.chat.slice.RoomAlreadyExistsException;
 import com.chat.slice.RoomMembershipException;
 import com.chat.slice.RoomNotFoundException;
@@ -45,7 +46,7 @@ public class ChatServiceI implements ChatService {
 
     @Override
     public void joinRoom(String roomName, String nickname, ChatCallbackPrx callback, Current current)
-    throws RoomNotFoundException, RoomMembershipException {
+            throws RoomNotFoundException, RoomMembershipException {
         if (!sessionManager.getActiveSessions().containsKey(nickname)) {
             throw new RoomMembershipException("El usuario no tiene una sesion activa.");
         }
@@ -54,7 +55,7 @@ public class ChatServiceI implements ChatService {
 
     @Override
     public void leaveRoom(String roomName, String nickname, Current current)
-    throws RoomNotFoundException, RoomMembershipException {
+            throws RoomNotFoundException, RoomMembershipException {
         if (!sessionManager.getActiveSessions().containsKey(nickname)) {
             throw new RoomMembershipException("El usuario no tiene una sesion activa.");
         }
@@ -63,10 +64,24 @@ public class ChatServiceI implements ChatService {
 
     @Override
     public void sendGroupMessage(String roomName, String senderNickname, String message, Current current)
-    throws RoomNotFoundException, RoomMembershipException {
+            throws RoomNotFoundException, RoomMembershipException {
         if (!sessionManager.getActiveSessions().containsKey(senderNickname)) {
             throw new RoomMembershipException("El usuario no tiene una sesion activa.");
         }
         roomManager.sendGroupMessage(roomName, senderNickname, message);
+    }
+
+    @Override
+    public void sendFileChunk(String senderNickname, FileChunk chunk, Current current)
+            throws UserNotFoundException, RoomNotFoundException, RoomMembershipException {
+        if (!sessionManager.getActiveSessions().containsKey(senderNickname)) {
+            throw new RoomMembershipException("El usuario no tiene una sesion activa.");
+        }
+
+        if (chunk.isGroup) {
+            roomManager.sendGroupFileChunk(senderNickname, chunk);
+        } else {
+            sessionManager.sendPrivateFileChunk(senderNickname, chunk);
+        }
     }
 }

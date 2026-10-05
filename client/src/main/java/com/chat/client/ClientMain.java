@@ -3,6 +3,7 @@ package com.chat.client;
 import java.util.Scanner;
 
 import com.chat.client.callbacks.ChatCallbackI;
+import com.chat.client.util.FileTransferUtil;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatServicePrx;
 import com.chat.slice.RoomAlreadyExistsException;
@@ -49,6 +50,7 @@ public class ClientMain {
                 System.out.println(">>> Sesión iniciada correctamente como: " + nickname);
                 System.out.println(">>> Uso para mensajes privados: /msg <usuario> <mensaje>");
                 System.out.println(">>> Grupos: /create <grupo>, /join <grupo>, /leave <grupo>, /group <grupo> <mensaje>");
+                System.out.println(">>> Enviar archivos: /sendfile <usuario> <ruta> O /sendfile -g <grupo> <ruta>");
                 System.out.println(">>> Escriba '/logout' o presione ENTER sin texto para salir.");
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -83,18 +85,18 @@ public class ClientMain {
                             System.err.println("[ERROR]: " + e.reason);
                         }
                     }
-                    //Comandos RF-03: /create, /group, /join, /leave
+                    // Comandos RF-03: /create, /group, /join, /leave
                     else if (input.startsWith("/create ")) {
                         String roomName = input.substring(8).trim();
-                        if (roomName.split(" ").length==1) {
+                        if (roomName.split(" ").length == 1) {
                             try {
-                            server.createRoom(roomName, nickname, callbackProxy);
-                            System.out.println("[SISTEMA]: Grupo '" + roomName + "' creado.");
-                        } catch (RoomAlreadyExistsException e) {
-                            System.err.println("[ERROR]: " + e.reason);
-                        } catch (RoomMembershipException e) {
-                            System.err.println("[ERROR]: " + e.reason);
-                        }                            
+                                server.createRoom(roomName, nickname, callbackProxy);
+                                System.out.println("[SISTEMA]: Grupo '" + roomName + "' creado.");
+                            } catch (RoomAlreadyExistsException e) {
+                                System.err.println("[ERROR]: " + e.reason);
+                            } catch (RoomMembershipException e) {
+                                System.err.println("[ERROR]: " + e.reason);
+                            }                            
                         } else {
                             System.err.println("[ERROR]: El nombre del grupo no puede tener espacios");
                         }
@@ -131,6 +133,25 @@ public class ClientMain {
                             System.err.println("[ERROR]: " + e.reason);
                         } catch (RoomMembershipException e) {
                             System.err.println("[ERROR]: " + e.reason);
+                        }
+                    }
+                    // Comando RF-04: /sendfile <usuario| -g grupo> <rutaArchivo>
+                    else if (input.startsWith("/sendfile ")) {
+                        String[] parts = input.substring(10).trim().split(" ", 2);
+                        if (parts.length < 2) {
+                            System.out.println("[SISTEMA]: Formato incorrecto. Uso: /sendfile <usuario> <ruta> O /sendfile -g <grupo> <ruta>");
+                            continue;
+                        }
+
+                        if (parts[0].equals("-g")) {
+                            String[] groupParts = parts[1].trim().split(" ", 2);
+                            if (groupParts.length < 2) {
+                                System.out.println("[SISTEMA]: Formato incorrecto. Uso: /sendfile -g <grupo> <rutaArchivo>");
+                                continue;
+                            }
+                            FileTransferUtil.sendFile(server, nickname, groupParts[0], groupParts[1], true);
+                        } else {
+                            FileTransferUtil.sendFile(server, nickname, parts[0], parts[1], false);
                         }
                     }
                     else {

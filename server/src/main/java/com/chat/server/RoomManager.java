@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.chat.slice.ChatCallbackPrx;
+import com.chat.slice.FileChunk;
 import com.chat.slice.RoomAlreadyExistsException;
 import com.chat.slice.RoomMembershipException;
 import com.chat.slice.RoomNotFoundException;
@@ -16,22 +17,18 @@ public class RoomManager {
     public void createRoom(String roomName, String ownerNickname, ChatCallbackPrx ownerCallback)
             throws RoomAlreadyExistsException, RoomMembershipException {
 
-        //validar que el nombre introducido no sea inválido (vacio o whitespace)
         validateName(roomName, "El nombre del grupo");
         validateName(ownerNickname, "El nickname");
         if (ownerCallback == null) {
             throw new RoomMembershipException("El callback del propietario no puede ser nulo.");
         }
 
-        //en caso de ser aprobado, se crea un conjunto tipo ConcurrentHashMap de los miembros del grupo
         Map<String, ChatCallbackPrx> members = new ConcurrentHashMap<>();
         members.put(ownerNickname, ownerCallback);
 
-        //revisar que el grupo no exista. .putIfAbsent() pone el grupo en el grupo de grupos y retorna null si ya existe esa instancia
         if (rooms.putIfAbsent(roomName, members) != null) {
             throw new RoomAlreadyExistsException("El grupo '" + roomName + "' ya existe.");
         }
-        //confirmación
         System.out.println("[RoomManager]: Grupo creado -> " + roomName + " por " + ownerNickname);
     }
 
@@ -85,6 +82,24 @@ public class RoomManager {
                 members.remove(nickname, callback);
                 System.err.println("[RoomManager]: Cliente no responsivo (" + nickname
                         + "). Eliminado del grupo '" + roomName + "'.");
+            }
+        });
+    }
+
+    public void sendGroupFileChunk(String senderNickname, FileChunk chunk)
+            throws RoomNotFoundException, RoomMembershipException {
+        Map<String, ChatCallbackPrx> members = getRoom(chunk.target);
+        if (!members.containsKey(senderNickname)) {
+            throw new RoomMembershipException("El usuario '" + senderNickname + "' no pertenece al grupo.");
+        }
+
+        members.forEach((nickname, callback) -> {
+            try {
+                callback.receiveFileChunk(senderNickname, chunk);
+            } catch (LocalException e) {
+                members.remove(nickname, callback);
+                System.err.println("[RoomManager]: Cliente no responsivo (" + nickname
+                        + "). Eliminado del grupo '" + chunk.target + "'.");
             }
         });
     }
