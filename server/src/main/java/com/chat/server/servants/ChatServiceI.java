@@ -2,6 +2,8 @@ package com.chat.server.servants;
 
 import com.chat.server.RoomManager;
 import com.chat.server.SessionManager;
+import com.chat.slice.AudioCallAlreadyActiveException;
+import com.chat.slice.AudioCallNotFoundException;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatService;
 import com.chat.slice.FileChunk;
@@ -83,5 +85,33 @@ public class ChatServiceI implements ChatService {
         } else {
             sessionManager.sendPrivateFileChunk(senderNickname, chunk);
         }
+    }
+
+    @Override
+    public void startAudioCall(String roomName, String nickname, Current current)
+            throws AudioCallAlreadyActiveException, RoomMembershipException, RoomNotFoundException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'startAudioCall'");
+    }
+
+    @Override
+    public void joinAudioCall(String roomName, String nickname, Current current)
+            throws AudioCallNotFoundException, RoomMembershipException, RoomNotFoundException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'joinAudioCall'");
+    }
+
+    @Override
+    public void leaveAudioCall(String roomName, String nickname, Current current)
+            throws AudioCallNotFoundException, RoomMembershipException, RoomNotFoundException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'leaveAudioCall'");
+    }
+
+    @Override
+    public boolean isInAudioCall(String roomName, String nickname, Current current)
+            throws RoomMembershipException, RoomNotFoundException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isInAudioCall'");
     }
 }

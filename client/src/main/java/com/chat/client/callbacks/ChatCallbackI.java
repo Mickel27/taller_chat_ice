@@ -69,4 +69,22 @@ public class ChatCallbackI implements ChatCallback {
             System.err.println("\n[ERROR]: Error al guardar el archivo reconstruido: " + e.getMessage());
         }
     }
+
+    @Override
+    public void notifyAudioCallJoined(String roomName, String nickname, Current current) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'notifyAudioCallJoined'");
+    }
+
+    @Override
+    public void notifyAudioCallLeft(String roomName, String nickname, Current current) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'notifyAudioCallLeft'");
+    }
+
+    @Override
+    public void notifyAudioCallEnded(String roomName, Current current) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'notifyAudioCallEnded'");
+    }
 }
