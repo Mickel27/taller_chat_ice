@@ -24,6 +24,18 @@ module slice {
         string reason;
     };
 
+    exception AudioCallNotFoundException {
+        string reason;
+    };
+    
+    exception AudioCallAlreadyActiveException {
+        string reason;
+    };
+    
+    exception AudioCallMembershipException {
+        string reason;
+    };
+
     // RF-04: Secuencia de bytes para el transporte binario de fragmentos
     sequence<byte> ByteSeq;
 
@@ -52,6 +64,24 @@ module slice {
 
         // RF-04: Recibir fragmento de archivo multimedia
         void receiveFileChunk(string senderNickname, FileChunk chunk);
+
+        // RF-06:
+        // Notifica que un usuario entro a una llamada grupal
+        void notifyAudioCallJoined(
+            string roomName,
+            string nickname
+        );
+        
+        // Notifica que un usuario salio de una llamada grupal
+        void notifyAudioCallLeft(
+            string roomName,
+            string nickname
+        );
+        
+        // Notifica que la llamada grupal termino porque quedo vacia
+        void notifyAudioCallEnded(
+            string roomName
+        );
     };
 
     // Interfaz del servicio principal que implementa el SERVIDOR
@@ -82,6 +112,38 @@ module slice {
         // RF-04: Enviar fragmento de archivo multimedia
         void sendFileChunk(string senderNickname, FileChunk chunk)
             throws UserNotFoundException, RoomNotFoundException, RoomMembershipException;
+        
+        //RF-06:
+        void startAudioCall(
+            string roomName,
+            string nickname
+        )
+        throws RoomNotFoundException,
+               RoomMembershipException,
+               AudioCallAlreadyActiveException;
+        
+        void joinAudioCall(
+            string roomName,
+            string nickname
+        )
+        throws RoomNotFoundException,
+               RoomMembershipException,
+               AudioCallNotFoundException;
+        
+        void leaveAudioCall(
+            string roomName,
+            string nickname
+        )
+        throws RoomNotFoundException,
+               RoomMembershipException,
+               AudioCallNotFoundException;
+        
+        bool isInAudioCall(
+            string roomName,
+            string nickname
+        )
+        throws RoomNotFoundException,
+               RoomMembershipException;
     };
 
 };
