@@ -128,7 +128,8 @@ module slice {
         )
         throws RoomNotFoundException,
                RoomMembershipException,
-               AudioCallNotFoundException;
+               AudioCallNotFoundException,
+               AudioCallMembershipException;
         
         void leaveAudioCall(
             string roomName,
@@ -136,7 +137,8 @@ module slice {
         )
         throws RoomNotFoundException,
                RoomMembershipException,
-               AudioCallNotFoundException;
+               AudioCallNotFoundException,
+               AudioCallMembershipException;
         
         bool isInAudioCall(
             string roomName,

@@ -9,6 +9,7 @@ import com.chat.slice.RoomAlreadyExistsException;
 import com.chat.slice.RoomMembershipException;
 import com.chat.slice.RoomNotFoundException;
 import com.zeroc.Ice.LocalException;
+import java.util.function.BiConsumer;
 
 public class RoomManager {
 
@@ -139,5 +140,56 @@ public class RoomManager {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(field + " no puede estar vacio.");
         }
+    }
+
+    public void broadcastToRoom(
+            String roomName,
+            BiConsumer<String, ChatCallbackPrx> notification
+    ) throws RoomNotFoundException {
+    
+        Map<String, ChatCallbackPrx> members = getRoom(roomName);
+    
+        members.forEach((nickname, callback) -> {
+            try {
+                notification.accept(nickname, callback);
+            } catch (LocalException e) {
+                members.remove(nickname, callback);
+    
+                System.err.println(
+                        "[RoomManager]: Cliente no responsivo (" +
+                        nickname + "). Eliminado del grupo '" +
+                        roomName + "'."
+                );
+            }
+        });
+    }
+
+    public void notifyAudioCallJoined(String roomName, String nickname)
+    throws RoomNotFoundException {
+        broadcastToRoom(roomName, (member, callback) ->
+            callback.notifyAudioCallJoined(
+                roomName,
+                nickname
+            )
+        );
+    }
+
+    public void notifyAudioCallLeft(String roomName, String nickname)
+    throws RoomNotFoundException {
+        broadcastToRoom(
+            roomName,
+            (member, callback) -> callback.notifyAudioCallLeft(roomName,nickname)
+        );
+    }
+
+    public void notifyAudioCallEnded(
+            String roomName
+    ) throws RoomNotFoundException {
+    
+        broadcastToRoom(
+                roomName,
+                (member, callback) ->
+                        callback.notifyAudioCallEnded(roomName)
+        );
     }
 }

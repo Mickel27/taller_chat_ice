@@ -1,5 +1,9 @@
 package com.chat.server.servants;
 
+import com.chat.server.AudioCallManager;
+import com.chat.slice.AudioCallAlreadyActiveException;
+import com.chat.slice.AudioCallMembershipException;
+import com.chat.slice.AudioCallNotFoundException;
 import com.chat.server.RoomManager;
 import com.chat.server.SessionManager;
 import com.chat.slice.AudioCallAlreadyActiveException;
@@ -18,10 +22,12 @@ public class ChatServiceI implements ChatService {
 
     private final SessionManager sessionManager;
     private final RoomManager roomManager;
+    private final AudioCallManager audioCallManager;
 
-    public ChatServiceI(SessionManager sessionManager, RoomManager roomManager) {
+    public ChatServiceI(SessionManager sessionManager, RoomManager roomManager, AudioCallManager audioCallManager) {
         this.sessionManager = sessionManager;
         this.roomManager = roomManager;
+        this.audioCallManager = audioCallManager;
     }
 
     @Override
@@ -88,30 +94,88 @@ public class ChatServiceI implements ChatService {
     }
 
     @Override
-    public void startAudioCall(String roomName, String nickname, Current current)
-            throws AudioCallAlreadyActiveException, RoomMembershipException, RoomNotFoundException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'startAudioCall'");
+    public void startAudioCall(
+            String roomName,
+            String nickname,
+            Current current
+    ) throws RoomNotFoundException,
+             RoomMembershipException,
+             AudioCallAlreadyActiveException {
+    
+        requireActiveSession(nickname);
+    
+        audioCallManager.startCall(roomName, nickname);
+    
+        roomManager.notifyAudioCallJoined(roomName, nickname);
     }
 
     @Override
-    public void joinAudioCall(String roomName, String nickname, Current current)
-            throws AudioCallNotFoundException, RoomMembershipException, RoomNotFoundException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'joinAudioCall'");
+    public void joinAudioCall(
+            String roomName,
+            String nickname,
+            Current current
+    ) throws RoomNotFoundException,
+             RoomMembershipException,
+             AudioCallNotFoundException,
+             AudioCallMembershipException {
+    
+        requireActiveSession(nickname);
+    
+        audioCallManager.joinCall(roomName, nickname);
+    
+        roomManager.notifyAudioCallJoined(
+                roomName,
+                nickname
+        );
     }
 
     @Override
-    public void leaveAudioCall(String roomName, String nickname, Current current)
-            throws AudioCallNotFoundException, RoomMembershipException, RoomNotFoundException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'leaveAudioCall'");
+    public void leaveAudioCall(
+            String roomName,
+            String nickname,
+            Current current
+    ) throws RoomNotFoundException,
+             RoomMembershipException,
+             AudioCallNotFoundException,
+             AudioCallMembershipException {
+    
+        requireActiveSession(nickname);
+    
+        boolean ended = audioCallManager.leaveCall(
+                roomName,
+                nickname
+        );
+    
+        roomManager.notifyAudioCallLeft(
+                roomName,
+                nickname
+        );
+    
+        if (ended) {
+            roomManager.notifyAudioCallEnded(roomName);
+        }
     }
 
     @Override
-    public boolean isInAudioCall(String roomName, String nickname, Current current)
-            throws RoomMembershipException, RoomNotFoundException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isInAudioCall'");
+    public boolean isInAudioCall(
+            String roomName,
+            String nickname,
+            Current current
+    ) throws RoomNotFoundException,
+             RoomMembershipException {
+    
+        requireActiveSession(nickname);
+    
+        return audioCallManager.isInCall(roomName, nickname);
+    }
+
+    private void requireActiveSession(String nickname)
+            throws RoomMembershipException {
+    
+        if (!sessionManager.getActiveSessions().containsKey(nickname)) {
+            throw new RoomMembershipException(
+                    "El usuario no tiene una sesion activa."
+            );
+        }
     }
 }
