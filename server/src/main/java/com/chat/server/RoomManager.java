@@ -104,6 +104,28 @@ public class RoomManager {
         });
     }
 
+    public boolean isMember(
+            String roomName,
+            String nickname
+    ) throws RoomMembershipException {
+    
+        Map<String, ChatCallbackPrx> members;
+    
+        try {
+            members = getRoom(roomName);
+        } catch (RoomNotFoundException e) {
+            throw new RoomMembershipException(e.reason);
+        }
+    
+        if (!members.containsKey(nickname)) {
+            throw new RoomMembershipException(
+                    "El usuario '" + nickname +
+                    "' no pertenece al grupo '" + roomName + "'."
+            );
+        }
+        return true;
+    }
+
     private Map<String, ChatCallbackPrx> getRoom(String roomName) throws RoomNotFoundException {
         validateName(roomName, "El nombre del grupo");
         Map<String, ChatCallbackPrx> members = rooms.get(roomName);
