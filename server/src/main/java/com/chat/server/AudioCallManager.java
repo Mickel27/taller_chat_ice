@@ -3,10 +3,7 @@ package com.chat.server;
 import com.chat.slice.AudioCallAlreadyActiveException;
 import com.chat.slice.AudioCallMembershipException;
 import com.chat.slice.AudioCallNotFoundException;
-import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.RoomMembershipException;
-import com.chat.slice.RoomNotFoundException;
-import com.zeroc.Ice.LocalException;
 
 import java.util.Map;
 import java.util.Set;

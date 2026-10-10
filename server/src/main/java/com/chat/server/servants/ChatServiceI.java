@@ -6,8 +6,6 @@ import com.chat.slice.AudioCallMembershipException;
 import com.chat.slice.AudioCallNotFoundException;
 import com.chat.server.RoomManager;
 import com.chat.server.SessionManager;
-import com.chat.slice.AudioCallAlreadyActiveException;
-import com.chat.slice.AudioCallNotFoundException;
 import com.chat.slice.ChatCallbackPrx;
 import com.chat.slice.ChatService;
 import com.chat.slice.FileChunk;

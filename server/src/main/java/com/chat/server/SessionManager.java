@@ -15,9 +15,14 @@ public class SessionManager {
     // del Callback)
     private final Map<String, ChatCallbackPrx> activeSessions = new ConcurrentHashMap<>();
     private RoomManager roomManager;
+    private AudioCallManager audioCallManager;
     
     public void setRoomManager(RoomManager roomManager) {
         this.roomManager = roomManager;
+    }
+
+    public void setAudioCallManager(AudioCallManager audioCallManager){
+        this.audioCallManager = audioCallManager;
     }
 
     public void login(String nickname, ChatCallbackPrx callback) throws UserAlreadyExistsException {
@@ -52,6 +57,9 @@ public class SessionManager {
         //en caso de tener un roomManager, salir de cualquier grupo de chat para evitar errores
         if (roomManager != null) {
             roomManager.leaveAllRooms(nickname);
+        }
+        if (audioCallManager != null) {
+            audioCallManager.leaveAllCalls(nickname);
         }
     }
 

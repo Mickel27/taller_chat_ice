@@ -14,8 +14,10 @@ public class ServerMain {
         try (Communicator communicator = Util.initialize(args, "config.server")) {
             SessionManager sessionManager = new SessionManager();
             RoomManager roomManager = new RoomManager();
+            AudioCallManager audioCallManager = new AudioCallManager(roomManager);
 
             sessionManager.setRoomManager(roomManager);
+            sessionManager.setAudioCallManager(audioCallManager);
 
             // Iniciar el servidor UDP para notas de voz en el puerto 10001
             UdpAudioRelayServer audioServer = new UdpAudioRelayServer(10001);
@@ -25,7 +27,7 @@ public class ServerMain {
             ObjectAdapter adapter = communicator.createObjectAdapter("ChatServiceAdapter");
 
             // Registrar el servant en el adaptador
-            ChatServiceI chatService = new ChatServiceI(sessionManager, roomManager);
+            ChatServiceI chatService = new ChatServiceI(sessionManager, roomManager, audioCallManager);
             adapter.add(chatService, Util.stringToIdentity("ChatService"));
 
             adapter.activate();
