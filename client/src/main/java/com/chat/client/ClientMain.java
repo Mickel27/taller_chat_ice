@@ -50,18 +50,20 @@ public class ClientMain {
             // Inicializar utilidades UDP y Grabadora de Audio
             UdpAudioClient udpAudioClient = new UdpAudioClient("localhost", 10001);
             AudioRecorder audioRecorder = new AudioRecorder();
+            
+            //Control de actividad de llamada, para evitar que el cliente intente entrar a una llamada estando en otra
+            String[] activeAudioRoom = { null };
 
             try {
                 server.login(nickname, callbackProxy);
-                
-                // Registrar el socket UDP del cliente en el servidor de audio
-                udpAudioClient.registerAndStart(nickname);
-
+                udpAudioClient.startPrivateEndpoint(nickname);
                 System.out.println(">>> Sesión iniciada correctamente como: " + nickname);
                 System.out.println(">>> Mensajes privados: /msg <usuario> <mensaje>");
                 System.out.println(">>> Grupos: /create <grupo>, /join <grupo>, /leave <grupo>, /group <grupo> <mensaje>");
                 System.out.println(">>> Enviar archivos: /sendfile <usuario| -g grupo> <ruta>");
-                System.out.println(">>> Audio 1-a-1: /record <usuario> para iniciar, /stoprecord para finalizar");
+                System.out.println(">>> Llamadas: /call-start <grupo>, /call-join <grupo>, /call-leave <grupo>");
+                System.out.println(">>> Audio grupal: /record, /stoprecord");
+                System.out.println(">>> Audio individual: /record <usuario>, /stoprecord");
                 System.out.println(">>> Escriba '/logout' o presione ENTER sin texto para salir.");
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -162,19 +164,59 @@ public class ClientMain {
                         }
                     }
                     // RF-05: Iniciar transmisión de nota de voz
+                    else if (input.equalsIgnoreCase("/record")) {
+                        if (activeAudioRoom[0] == null) {
+                            System.out.println("[AUDIO]: Primero debes entrar a una llamada grupal.");
+                            continue;
+                        }
+                    
+                        if (audioRecorder.isRecording()) {
+                            System.out.println("[AUDIO]: Ya estas transmitiendo audio.");
+                            continue;
+                        }
+                        System.out.println("[AUDIO]: Transmitiendo en la llamada del grupo '" +activeAudioRoom[0] + "'.");
+                        audioRecorder.startRecording(udpAudioClient::sendAudioChunk);
+                    }
+                    // RF-05: Transmision de audio individual
                     else if (input.startsWith("/record ")) {
-                        String targetUser = input.substring(8).trim();
-                        if (targetUser.isEmpty()) {
-                            System.out.println("[SISTEMA]: Uso: /record <usuario>");
+                        String targetNickname = input.substring(8).trim();
+
+                        if (targetNickname.isEmpty()) {
+                            System.out.println(
+                                    "[AUDIO]: Uso: /record <usuario>"
+                            );
+                            continue;
+                        }
+
+                        if (activeAudioRoom[0] != null) {
+                            System.out.println(
+                                    "[AUDIO]: Sal primero de la llamada grupal."
+                            );
                             continue;
                         }
 
                         if (audioRecorder.isRecording()) {
-                            System.out.println("[AUDIO]: Ya estas transmitiendo audio. Usa /stoprecord para detener.");
-                        } else {
-                            System.out.println("[AUDIO]: Transmitiendo voz a '" + targetUser + "'. Escribe /stoprecord para finalizar.");
-                            audioRecorder.startRecording(chunk -> 
-                                udpAudioClient.sendAudioChunk(nickname, targetUser, chunk)
+                            System.out.println(
+                                    "[AUDIO]: Ya estas transmitiendo audio."
+                            );
+                            continue;
+                        }
+
+                        try {
+                            udpAudioClient.startPrivateTransmission(
+                                    targetNickname
+                            );
+                            audioRecorder.startRecording(
+                                    udpAudioClient::sendPrivateAudioChunk
+                            );
+                            System.out.println(
+                                    "[AUDIO]: Transmitiendo a '" +
+                                    targetNickname + "'."
+                            );
+                        } catch (IllegalArgumentException |
+                                 IllegalStateException e) {
+                            System.err.println(
+                                    "[ERROR]: " + e.getMessage()
                             );
                         }
                     }
@@ -182,15 +224,64 @@ public class ClientMain {
                     else if (input.equalsIgnoreCase("/stoprecord")) {
                         if (audioRecorder.isRecording()) {
                             audioRecorder.stopRecording();
+                            udpAudioClient.stopPrivateTransmission();
                             System.out.println("[AUDIO]: Transmisión de voz finalizada.");
                         } else {
                             System.out.println("[AUDIO]: No hay ninguna grabación en curso.");
                         }
                     }
+
+                    else if (input.startsWith("/call-start ")) {
+                        String roomName = input.substring(12).trim();
+                        try {
+                            server.startAudioCall(roomName, nickname);
+                            udpAudioClient.joinCall(roomName, nickname);
+                            activeAudioRoom[0] = roomName;
+                            System.out.println("[AUDIO]: Llamada iniciada en '" + roomName + "'.");
+                        } catch (Exception e) {
+                            System.err.println("[ERROR]: No se pudo iniciar la llamada: " +e.getMessage());
+                        }
+                    }
+
+                    else if (input.startsWith("/call-join ")) {
+                        String roomName = input.substring(11).trim();
+                        try {
+                            server.joinAudioCall(roomName, nickname);
+                            udpAudioClient.joinCall(roomName, nickname);
+                            activeAudioRoom[0] = roomName;
+                            System.out.println("[AUDIO]: Entraste a la llamada de '" +roomName + "'.");
+                        } catch (Exception e) {
+                            System.err.println("[ERROR]: " + e.getMessage());
+                        }
+                    }
+
+                    else if (input.startsWith("/call-leave ")) {
+                        String roomName = input.substring(12).trim();
+                        if (activeAudioRoom[0] == null || !activeAudioRoom[0].equals(roomName)) {
+                            System.out.println("[AUDIO]: No estas dentro de una llamada en '" +roomName + "'.");
+                            continue;
+                        }
+
+                        try {
+                            if (audioRecorder.isRecording()) {
+                                audioRecorder.stopRecording();
+                            }
+                            udpAudioClient.stopGroupCall();
+                            server.leaveAudioCall(roomName, nickname);
+                            activeAudioRoom[0] = null;                    
+                            System.out.println("[AUDIO]: Saliste de la llamada de '" +roomName + "'.");
+                    
+                        } catch (Exception e) {
+                            System.err.println("[ERROR]: " + e.getMessage());
+                        }
+                    }
+
                     else {
                         System.out.println("[SISTEMA]: Comando no reconocido.");
                     }
                 }
+
+                scanner.close();
 
                 if (audioRecorder.isRecording()) {
                     audioRecorder.stopRecording();

@@ -20,7 +20,11 @@ public class ServerMain {
             sessionManager.setAudioCallManager(audioCallManager);
 
             // Iniciar el servidor UDP para notas de voz en el puerto 10001
-            UdpAudioRelayServer audioServer = new UdpAudioRelayServer(10001);
+            UdpAudioRelayServer audioServer = new UdpAudioRelayServer(
+                    10001,
+                    audioCallManager,
+                    sessionManager
+            );
             audioServer.start();
 
             // Crear adaptador de objetos usando la propiedad definida en config.server
