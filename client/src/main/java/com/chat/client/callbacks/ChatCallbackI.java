@@ -72,19 +72,28 @@ public class ChatCallbackI implements ChatCallback {
 
     @Override
     public void notifyAudioCallJoined(String roomName, String nickname, Current current) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'notifyAudioCallJoined'");
+        System.out.println(
+                "\n[AUDIO]: '" + nickname +
+                "' entro a la llamada del grupo '" +
+                roomName + "'."
+        );
     }
 
     @Override
     public void notifyAudioCallLeft(String roomName, String nickname, Current current) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'notifyAudioCallLeft'");
+        System.out.println(
+                "\n[AUDIO]: '" + nickname +
+                "' salio de la llamada del grupo '" +
+                roomName + "'."
+        );
     }
 
     @Override
     public void notifyAudioCallEnded(String roomName, Current current) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'notifyAudioCallEnded'");
+        System.out.println(
+                "\n[AUDIO]: La llamada del grupo '" +
+                roomName +
+                "' termino porque quedo vacia."
+        );
     }
 }

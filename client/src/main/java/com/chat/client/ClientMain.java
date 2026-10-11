@@ -58,13 +58,7 @@ public class ClientMain {
                 server.login(nickname, callbackProxy);
                 udpAudioClient.startPrivateEndpoint(nickname);
                 System.out.println(">>> Sesión iniciada correctamente como: " + nickname);
-                System.out.println(">>> Mensajes privados: /msg <usuario> <mensaje>");
-                System.out.println(">>> Grupos: /create <grupo>, /join <grupo>, /leave <grupo>, /group <grupo> <mensaje>");
-                System.out.println(">>> Enviar archivos: /sendfile <usuario| -g grupo> <ruta>");
-                System.out.println(">>> Llamadas: /call-start <grupo>, /call-join <grupo>, /call-leave <grupo>");
-                System.out.println(">>> Audio grupal: /record, /stoprecord");
-                System.out.println(">>> Audio individual: /record <usuario>, /stoprecord");
-                System.out.println(">>> Escriba '/logout' o presione ENTER sin texto para salir.");
+                help();
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     try {
@@ -82,6 +76,11 @@ public class ClientMain {
 
                     if (input.equalsIgnoreCase("/logout") || input.isEmpty()) {
                         break;
+                    }
+
+                    if (input.equalsIgnoreCase("/help")) {
+                        help();
+                        continue;
                     }
 
                     // Comando RF-02: Mensaje privado
@@ -163,8 +162,22 @@ public class ClientMain {
                             FileTransferUtil.sendFile(server, nickname, parts[0], parts[1], false);
                         }
                     }
-                    // RF-05: Iniciar transmisión de nota de voz
-                    else if (input.equalsIgnoreCase("/record")) {
+                    // RF-05: Silenciarse durante una llamada sin abandonarla
+                    else if (input.equalsIgnoreCase("/mute")) {
+                        if (audioRecorder.isRecording()) {
+                            audioRecorder.stopRecording();
+                            udpAudioClient.stopPrivateTransmission();
+                            System.out.println(
+                                    "[AUDIO]: Microfono silenciado."
+                            );
+                        } else {
+                            System.out.println(
+                                    "[AUDIO]: El microfono ya esta silenciado."
+                            );
+                        }
+                    }
+                    // RF-05: Activar el microfono de la llamada grupal
+                    else if (input.equalsIgnoreCase("/unmute")) {
                         if (activeAudioRoom[0] == null) {
                             System.out.println("[AUDIO]: Primero debes entrar a una llamada grupal.");
                             continue;
@@ -174,16 +187,20 @@ public class ClientMain {
                             System.out.println("[AUDIO]: Ya estas transmitiendo audio.");
                             continue;
                         }
-                        System.out.println("[AUDIO]: Transmitiendo en la llamada del grupo '" +activeAudioRoom[0] + "'.");
+                        System.out.println(
+                                "[AUDIO]: Microfono activado en la llamada del grupo '" +
+                                activeAudioRoom[0] + "'."
+                        );
                         audioRecorder.startRecording(udpAudioClient::sendAudioChunk);
                     }
-                    // RF-05: Transmision de audio individual
-                    else if (input.startsWith("/record ")) {
-                        String targetNickname = input.substring(8).trim();
+                    // RF-05: Iniciar transmision de audio individual
+                    else if (input.startsWith("/private-start ")) {
+                        String targetNickname =
+                                input.substring(15).trim();
 
                         if (targetNickname.isEmpty()) {
                             System.out.println(
-                                    "[AUDIO]: Uso: /record <usuario>"
+                                    "[AUDIO]: Uso: /private-start <usuario>"
                             );
                             continue;
                         }
@@ -220,14 +237,18 @@ public class ClientMain {
                             );
                         }
                     }
-                    // RF-05: Detener transmisión de nota de voz
-                    else if (input.equalsIgnoreCase("/stoprecord")) {
+                    // RF-05: Detener transmision de audio individual
+                    else if (input.equalsIgnoreCase("/private-stop")) {
                         if (audioRecorder.isRecording()) {
                             audioRecorder.stopRecording();
                             udpAudioClient.stopPrivateTransmission();
-                            System.out.println("[AUDIO]: Transmisión de voz finalizada.");
+                            System.out.println(
+                                    "[AUDIO]: Transmision privada finalizada."
+                            );
                         } else {
-                            System.out.println("[AUDIO]: No hay ninguna grabación en curso.");
+                            System.out.println(
+                                    "[AUDIO]: No hay ninguna transmision privada."
+                            );
                         }
                     }
 
@@ -237,6 +258,9 @@ public class ClientMain {
                             server.startAudioCall(roomName, nickname);
                             udpAudioClient.joinCall(roomName, nickname);
                             activeAudioRoom[0] = roomName;
+                            audioRecorder.startRecording(
+                                    udpAudioClient::sendAudioChunk
+                            );
                             System.out.println("[AUDIO]: Llamada iniciada en '" + roomName + "'.");
                         } catch (Exception e) {
                             System.err.println("[ERROR]: No se pudo iniciar la llamada: " +e.getMessage());
@@ -249,6 +273,9 @@ public class ClientMain {
                             server.joinAudioCall(roomName, nickname);
                             udpAudioClient.joinCall(roomName, nickname);
                             activeAudioRoom[0] = roomName;
+                            audioRecorder.startRecording(
+                                    udpAudioClient::sendAudioChunk
+                            );
                             System.out.println("[AUDIO]: Entraste a la llamada de '" +roomName + "'.");
                         } catch (Exception e) {
                             System.err.println("[ERROR]: " + e.getMessage());
@@ -300,5 +327,15 @@ public class ClientMain {
             System.err.println("Error en la ejecución del cliente: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private static void help() {
+        System.out.println(">>> Mensajes privados: /msg <usuario> <mensaje>");
+        System.out.println(">>> Grupos: /create <grupo>, /join <grupo>, /leave <grupo>, /group <grupo> <mensaje>");
+        System.out.println(">>> Enviar archivos: /sendfile <usuario| -g grupo> <ruta>");
+        System.out.println(">>> Llamadas: /call-start <grupo>, /call-join <grupo>, /call-leave <grupo>");
+        System.out.println(">>> Audio grupal: /mute, /unmute");
+        System.out.println(">>> Audio individual: /private-start <usuario>, /private-stop");
+        System.out.println(">>> Escriba '/logout' o presione ENTER sin texto para salir.");
     }
 }
