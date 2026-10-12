@@ -65,6 +65,12 @@ module slice {
         // RF-04: Recibir fragmento de archivo multimedia
         void receiveFileChunk(string senderNickname, FileChunk chunk);
 
+        // RF-05: Señalización de llamada 1 a 1
+        void notifyIncomingCall(string callerNickname);
+        void notifyCallAccepted(string calleeNickname);
+        void notifyCallRejected(string calleeNickname, string reason);
+        void notifyCallEnded(string partnerNickname);
+
         // RF-06:
         // Notifica que un usuario entro a una llamada grupal
         void notifyAudioCallJoined(
@@ -112,6 +118,19 @@ module slice {
         // RF-04: Enviar fragmento de archivo multimedia
         void sendFileChunk(string senderNickname, FileChunk chunk)
             throws UserNotFoundException, RoomNotFoundException, RoomMembershipException;
+
+        // RF-05: Señalización de llamadas 1 a 1
+        void requestPrivateCall(string callerNickname, string targetNickname)
+            throws UserNotFoundException, AudioCallAlreadyActiveException;
+
+        void acceptPrivateCall(string calleeNickname, string callerNickname)
+            throws UserNotFoundException, AudioCallNotFoundException, AudioCallAlreadyActiveException;
+
+        void rejectPrivateCall(string calleeNickname, string callerNickname, string reason)
+            throws UserNotFoundException, AudioCallNotFoundException;
+
+        void hangupPrivateCall(string senderNickname, string targetNickname)
+            throws UserNotFoundException, AudioCallNotFoundException;
         
         //RF-06:
         void startAudioCall(

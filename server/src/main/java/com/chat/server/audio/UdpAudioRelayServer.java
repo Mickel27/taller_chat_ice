@@ -327,6 +327,10 @@ public class UdpAudioRelayServer implements Runnable {
             return;
         }
 
+        if (!audioCallManager.isPrivateCallActive(senderNickname, targetNickname)) {
+            return;
+        }
+
         InetSocketAddress targetAddress =
                 privateParticipants.get(targetNickname);
 

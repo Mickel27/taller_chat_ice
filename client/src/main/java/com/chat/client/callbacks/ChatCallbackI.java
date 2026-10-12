@@ -70,6 +70,67 @@ public class ChatCallbackI implements ChatCallback {
         }
     }
 
+    public interface CallEventListener {
+        void onIncomingCall(String callerNickname);
+        void onCallAccepted(String calleeNickname);
+        void onCallRejected(String calleeNickname, String reason);
+        void onCallEnded(String partnerNickname);
+    }
+
+    private CallEventListener callEventListener;
+
+    public void setCallEventListener(CallEventListener listener) {
+        this.callEventListener = listener;
+    }
+
+    @Override
+    public void notifyIncomingCall(String callerNickname, Current current) {
+        System.out.println("\n--------------------------------------------------");
+        System.out.println(">>> [LLAMADA ENTRANTE]: '" + callerNickname + "' te esta llamando.");
+        System.out.println(">>> Para contestar: /call-accept " + callerNickname);
+        System.out.println(">>> Para rechazar:  /call-reject " + callerNickname);
+        System.out.println("--------------------------------------------------");
+        System.out.print("> ");
+        if (callEventListener != null) {
+            callEventListener.onIncomingCall(callerNickname);
+        }
+    }
+
+    @Override
+    public void notifyCallAccepted(String calleeNickname, Current current) {
+        System.out.println("\n--------------------------------------------------");
+        System.out.println(">>> [LLAMADA CONECTADA]: '" + calleeNickname + "' acepto la llamada.");
+        System.out.println(">>> Microfono activado. Habla ahora.");
+        System.out.println(">>> Para silenciarte: /mute | Para colgar: /hangup");
+        System.out.println("--------------------------------------------------");
+        System.out.print("> ");
+        if (callEventListener != null) {
+            callEventListener.onCallAccepted(calleeNickname);
+        }
+    }
+
+    @Override
+    public void notifyCallRejected(String calleeNickname, String reason, Current current) {
+        System.out.println("\n--------------------------------------------------");
+        System.out.println(">>> [LLAMADA RECHAZADA]: '" + calleeNickname + "' rechazo la llamada (" + reason + ").");
+        System.out.println("--------------------------------------------------");
+        System.out.print("> ");
+        if (callEventListener != null) {
+            callEventListener.onCallRejected(calleeNickname, reason);
+        }
+    }
+
+    @Override
+    public void notifyCallEnded(String partnerNickname, Current current) {
+        System.out.println("\n--------------------------------------------------");
+        System.out.println(">>> [LLAMADA FINALIZADA]: La llamada con '" + partnerNickname + "' ha terminado.");
+        System.out.println("--------------------------------------------------");
+        System.out.print("> ");
+        if (callEventListener != null) {
+            callEventListener.onCallEnded(partnerNickname);
+        }
+    }
+
     @Override
     public void notifyAudioCallJoined(String roomName, String nickname, Current current) {
         System.out.println(
