@@ -57,6 +57,15 @@ public class RoomManager {
         }
     }
 
+    public String[] listRooms() {
+        return rooms.keySet().toArray(new String[0]);
+    }
+
+    public String[] listRoomMembers(String roomName) throws RoomNotFoundException {
+        Map<String, ChatCallbackPrx> members = getRoom(roomName);
+        return members.keySet().toArray(new String[0]);
+    }
+
     public void leaveAllRooms(String nickname) {
         rooms.forEach((roomName, members) -> {
             members.remove(nickname);
@@ -77,12 +86,14 @@ public class RoomManager {
         }
 
         members.forEach((nickname, callback) -> {
-            try {
-                callback.receiveGroupMessage(roomName, senderNickname, message);
-            } catch (LocalException e) {
-                members.remove(nickname, callback);
-                System.err.println("[RoomManager]: Cliente no responsivo (" + nickname
-                        + "). Eliminado del grupo '" + roomName + "'.");
+            if (!nickname.equals(senderNickname)) {
+                try {
+                    callback.receiveGroupMessage(roomName, senderNickname, message);
+                } catch (LocalException e) {
+                    members.remove(nickname, callback);
+                    System.err.println("[RoomManager]: Cliente no responsivo (" + nickname
+                            + "). Eliminado del grupo '" + roomName + "'.");
+                }
             }
         });
     }
@@ -95,12 +106,14 @@ public class RoomManager {
         }
 
         members.forEach((nickname, callback) -> {
-            try {
-                callback.receiveFileChunk(senderNickname, chunk);
-            } catch (LocalException e) {
-                members.remove(nickname, callback);
-                System.err.println("[RoomManager]: Cliente no responsivo (" + nickname
-                        + "). Eliminado del grupo '" + chunk.target + "'.");
+            if (!nickname.equals(senderNickname)) {
+                try {
+                    callback.receiveFileChunk(senderNickname, chunk);
+                } catch (LocalException e) {
+                    members.remove(nickname, callback);
+                    System.err.println("[RoomManager]: Cliente no responsivo (" + nickname
+                            + "). Eliminado del grupo '" + chunk.target + "'.");
+                }
             }
         });
     }

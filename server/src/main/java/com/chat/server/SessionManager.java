@@ -60,6 +60,15 @@ public class SessionManager {
         }
         if (audioCallManager != null) {
             audioCallManager.leaveAllCalls(nickname);
+            String partner = audioCallManager.cleanUserPrivateCalls(nickname);
+            if (partner != null) {
+                ChatCallbackPrx partnerCb = activeSessions.get(partner);
+                if (partnerCb != null) {
+                    try {
+                        partnerCb.notifyCallEnded(nickname);
+                    } catch (LocalException ignored) {}
+                }
+            }
         }
     }
 
@@ -77,12 +86,35 @@ public class SessionManager {
                 System.err.println(
                         "[SessionManager]: Cliente no responsivo (" + user + "). Eliminando sesion fantasma...");
                 activeSessions.remove(user);
+                if (roomManager != null) {
+                    roomManager.leaveAllRooms(user);
+                }
+                if (audioCallManager != null) {
+                    audioCallManager.leaveAllCalls(user);
+                    String partner = audioCallManager.cleanUserPrivateCalls(user);
+                    if (partner != null) {
+                        ChatCallbackPrx partnerCb = activeSessions.get(partner);
+                        if (partnerCb != null) {
+                            try {
+                                partnerCb.notifyCallEnded(user);
+                            } catch (LocalException ignored) {}
+                        }
+                    }
+                }
             }
         });
     }
 
     public Map<String, ChatCallbackPrx> getActiveSessions() {
         return activeSessions;
+    }
+
+    public String[] listUsers() {
+        return activeSessions.keySet().toArray(new String[0]);
+    }
+
+    public ChatCallbackPrx getCallback(String nickname) {
+        return activeSessions.get(nickname);
     }
 
     public void sendPrivateMessage(String senderNickname, String targetNickname, String message)

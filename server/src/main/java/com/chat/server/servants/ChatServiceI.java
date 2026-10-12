@@ -15,6 +15,7 @@ import com.chat.slice.RoomNotFoundException;
 import com.chat.slice.UserAlreadyExistsException;
 import com.chat.slice.UserNotFoundException;
 import com.zeroc.Ice.Current;
+import com.zeroc.Ice.LocalException;
 
 public class ChatServiceI implements ChatService {
 
@@ -36,6 +37,21 @@ public class ChatServiceI implements ChatService {
     @Override
     public void logout(String nickname, Current current) throws UserNotFoundException {
         sessionManager.logout(nickname);
+    }
+
+    @Override
+    public String[] listUsers(Current current) {
+        return sessionManager.listUsers();
+    }
+
+    @Override
+    public String[] listRooms(Current current) {
+        return roomManager.listRooms();
+    }
+
+    @Override
+    public String[] listRoomMembers(String roomName, Current current) throws RoomNotFoundException {
+        return roomManager.listRoomMembers(roomName);
     }
 
     @Override
@@ -88,6 +104,83 @@ public class ChatServiceI implements ChatService {
             roomManager.sendGroupFileChunk(senderNickname, chunk);
         } else {
             sessionManager.sendPrivateFileChunk(senderNickname, chunk);
+        }
+    }
+
+    @Override
+    public void requestPrivateCall(String callerNickname, String targetNickname, Current current)
+            throws UserNotFoundException, AudioCallAlreadyActiveException {
+        requireActiveUser(callerNickname);
+
+        ChatCallbackPrx targetCb = sessionManager.getCallback(targetNickname);
+        if (targetCb == null) {
+            throw new UserNotFoundException("El usuario '" + targetNickname + "' no existe o no esta conectado.");
+        }
+
+        audioCallManager.requestPrivateCall(callerNickname, targetNickname);
+
+        try {
+            targetCb.notifyIncomingCall(callerNickname);
+        } catch (LocalException e) {
+            audioCallManager.cleanUserPrivateCalls(targetNickname);
+            throw new UserNotFoundException("El usuario '" + targetNickname + "' se desconecto inesperadamente.");
+        }
+    }
+
+    @Override
+    public void acceptPrivateCall(String calleeNickname, String callerNickname, Current current)
+            throws UserNotFoundException, AudioCallNotFoundException, AudioCallAlreadyActiveException {
+        requireActiveUser(calleeNickname);
+
+        ChatCallbackPrx callerCb = sessionManager.getCallback(callerNickname);
+        if (callerCb == null) {
+            audioCallManager.cleanUserPrivateCalls(callerNickname);
+            throw new UserNotFoundException("El usuario '" + callerNickname + "' ya no esta conectado.");
+        }
+
+        audioCallManager.acceptPrivateCall(calleeNickname, callerNickname);
+
+        try {
+            callerCb.notifyCallAccepted(calleeNickname);
+        } catch (LocalException e) {
+            audioCallManager.hangupPrivateCall(calleeNickname, callerNickname);
+            throw new UserNotFoundException("El usuario '" + callerNickname + "' se desconecto al contestar.");
+        }
+    }
+
+    @Override
+    public void rejectPrivateCall(String calleeNickname, String callerNickname, String reason, Current current)
+            throws UserNotFoundException, AudioCallNotFoundException {
+        requireActiveUser(calleeNickname);
+
+        audioCallManager.rejectPrivateCall(calleeNickname, callerNickname);
+
+        ChatCallbackPrx callerCb = sessionManager.getCallback(callerNickname);
+        if (callerCb != null) {
+            try {
+                callerCb.notifyCallRejected(calleeNickname, reason);
+            } catch (LocalException ignored) {}
+        }
+    }
+
+    @Override
+    public void hangupPrivateCall(String senderNickname, String targetNickname, Current current)
+            throws UserNotFoundException, AudioCallNotFoundException {
+        requireActiveUser(senderNickname);
+
+        String partner = audioCallManager.hangupPrivateCall(senderNickname, targetNickname);
+
+        ChatCallbackPrx targetCb = sessionManager.getCallback(partner);
+        if (targetCb != null) {
+            try {
+                targetCb.notifyCallEnded(senderNickname);
+            } catch (LocalException ignored) {}
+        }
+    }
+
+    private void requireActiveUser(String nickname) throws UserNotFoundException {
+        if (!sessionManager.getActiveSessions().containsKey(nickname)) {
+            throw new UserNotFoundException("El usuario '" + nickname + "' no tiene una sesion activa.");
         }
     }
 
