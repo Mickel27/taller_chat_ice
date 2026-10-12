@@ -102,6 +102,10 @@ public class ClientMain {
                 server.login(nickname, callbackProxy);
                 udpAudioClient.startPrivateEndpoint(nickname);
                 System.out.println(">>> Sesión iniciada correctamente como: " + nickname);
+                try {
+                    String[] onlineUsers = server.listUsers();
+                    System.out.println(">>> Usuarios conectados: " + String.join(", ", onlineUsers));
+                } catch (Exception ignored) {}
                 help();
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -142,8 +146,49 @@ public class ClientMain {
                         continue;
                     }
 
+                    // RF-01: Listar usuarios conectados
+                    if (input.equalsIgnoreCase("/users") || input.equalsIgnoreCase("/list-users") || input.equalsIgnoreCase("/online")) {
+                        String[] users = server.listUsers();
+                        System.out.println("\n[USUARIOS CONECTADOS] (" + users.length + "):");
+                        if (users.length == 0) {
+                            System.out.println("  (No hay otros usuarios en línea)");
+                        } else {
+                            for (String u : users) {
+                                System.out.println("  - " + u + (u.equals(nickname) ? " (tú)" : ""));
+                            }
+                        }
+                    }
+                    // RF-03: Listar catálogo de salas disponibles
+                    else if (input.equalsIgnoreCase("/rooms") || input.equalsIgnoreCase("/list-rooms")) {
+                        String[] rooms = server.listRooms();
+                        System.out.println("\n[CATÁLOGO DE SALAS DISPONIBLES] (" + rooms.length + "):");
+                        if (rooms.length == 0) {
+                            System.out.println("  (No hay salas creadas aún. Crea una con /create <nombre>)");
+                        } else {
+                            for (String r : rooms) {
+                                System.out.println("  - " + r);
+                            }
+                        }
+                    }
+                    // RF-03: Listar miembros de una sala
+                    else if (input.startsWith("/members ") || input.startsWith("/room-members ")) {
+                        String roomName = input.startsWith("/members ") ? input.substring(9).trim() : input.substring(14).trim();
+                        if (roomName.isEmpty()) {
+                            System.out.println("[SISTEMA]: Uso: /members <grupo>");
+                            continue;
+                        }
+                        try {
+                            String[] members = server.listRoomMembers(roomName);
+                            System.out.println("\n[MIEMBROS DE '" + roomName + "'] (" + members.length + "):");
+                            for (String m : members) {
+                                System.out.println("  - " + m + (m.equals(nickname) ? " (tú)" : ""));
+                            }
+                        } catch (RoomNotFoundException e) {
+                            System.err.println("[ERROR]: " + e.reason);
+                        }
+                    }
                     // Comando RF-02: Mensaje privado
-                    if (input.startsWith("/msg ")) {
+                    else if (input.startsWith("/msg ")) {
                         String[] parts = input.substring(5).trim().split(" ", 2);
                         if (parts.length < 2) {
                             System.out.println("[SISTEMA]: Formato incorrecto. Uso: /msg <usuario> <mensaje>");
@@ -474,6 +519,10 @@ public class ClientMain {
 
     private static void help() {
         System.out.println("==================== COMANDOS DISPONIBLES ====================");
+        System.out.println(">>> Catálogos y listados:");
+        System.out.println("      /users                  - Listar usuarios conectados actualmente");
+        System.out.println("      /rooms                  - Listar catálogo de salas disponibles");
+        System.out.println("      /members <grupo>        - Listar miembros de una sala específica");
         System.out.println(">>> Mensajería privada:  /msg <usuario> <mensaje>");
         System.out.println(">>> Gestión de grupos:   /create <grupo>, /join <grupo>, /leave <grupo>");
         System.out.println(">>> Mensajes grupales:   /group <grupo> <mensaje>");

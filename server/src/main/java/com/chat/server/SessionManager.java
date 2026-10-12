@@ -109,6 +109,10 @@ public class SessionManager {
         return activeSessions;
     }
 
+    public String[] listUsers() {
+        return activeSessions.keySet().toArray(new String[0]);
+    }
+
     public ChatCallbackPrx getCallback(String nickname) {
         return activeSessions.get(nickname);
     }

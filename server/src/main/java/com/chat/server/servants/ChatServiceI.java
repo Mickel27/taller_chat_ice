@@ -40,6 +40,21 @@ public class ChatServiceI implements ChatService {
     }
 
     @Override
+    public String[] listUsers(Current current) {
+        return sessionManager.listUsers();
+    }
+
+    @Override
+    public String[] listRooms(Current current) {
+        return roomManager.listRooms();
+    }
+
+    @Override
+    public String[] listRoomMembers(String roomName, Current current) throws RoomNotFoundException {
+        return roomManager.listRoomMembers(roomName);
+    }
+
+    @Override
     public void sendPrivateMessage(String senderNickname, String targetNickname, String message, Current current)
             throws UserNotFoundException {
         sessionManager.sendPrivateMessage(senderNickname, targetNickname, message);

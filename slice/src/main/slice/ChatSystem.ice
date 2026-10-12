@@ -39,6 +39,9 @@ module slice {
     // RF-04: Secuencia de bytes para el transporte binario de fragmentos
     sequence<byte> ByteSeq;
 
+    // Catálogos y listados de usuarios y salas
+    sequence<string> StringSeq;
+
     // RF-04: Estructura de metadatos y contenido del fragmento (Chunk)
     struct FileChunk {
         string fileId;
@@ -97,6 +100,12 @@ module slice {
             
         void logout(string nickname) 
             throws UserNotFoundException;
+
+        // Catálogos y listados (RF-01 y RF-03)
+        StringSeq listUsers();
+        StringSeq listRooms();
+        StringSeq listRoomMembers(string roomName)
+            throws RoomNotFoundException;
 
         // RF-02: Enviar un mensaje privado de un remitente a un destinatario
         void sendPrivateMessage(string senderNickname, string targetNickname, string message)

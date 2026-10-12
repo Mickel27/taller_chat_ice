@@ -129,6 +129,9 @@ Al iniciar el cliente, el sistema solicitará el nombre de usuario (*nickname*).
 | Comando | Sintaxis | Descripción |
 | :--- | :--- | :--- |
 | **Ayuda** | `/help` | Muestra el catálogo de comandos disponibles. |
+| **Listar Usuarios** | `/users` | Consulta y lista todos los usuarios conectados en la plataforma. |
+| **Listar Salas** | `/rooms` | Consulta el catálogo completo de salas de chat disponibles. |
+| **Listar Miembros** | `/members <grupo>` | Consulta los miembros activos en una sala de chat específica. |
 | **Mensaje Privado** | `/msg <usuario> <mensaje>` | Envía un mensaje de texto 1 a 1 a otro usuario conectado. |
 | **Crear Grupo** | `/create <grupo>` | Crea una nueva sala de chat con nombre único. |
 | **Unirse a Grupo** | `/join <grupo>` | Se suscribe a los eventos y mensajes de una sala existente. |
